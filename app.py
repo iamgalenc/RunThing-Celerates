@@ -197,8 +197,8 @@ def get_enriched(_raw_df, fname):
 
 
 @st.cache_data(show_spinner=False)
-def get_feature_matrix(_runs_raw):
-    return build_feature_matrix(_runs_raw)
+def get_feature_matrix(runs_raw):
+    return build_feature_matrix(runs_raw)
 
 
 # ---------------------------------------------------------------------------
