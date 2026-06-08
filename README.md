@@ -1,6 +1,6 @@
 # GPX Running Analytics Dashboard
 
-Live Demo: [GPX Running Analytics on Streamlit](https://your-app-name.streamlit.app)
+Live Demo: [GPX Running Analytics on Streamlit](https://runthing-celerates.streamlit.app/)
 
 An end-to-end Python pipeline for parsing GPX files, engineering advanced run features, visualizing routes and pace profiles, training Machine Learning regression/classification models, and interacting with an AI Pace Coach powered by the Google GenAI SDK.
 
