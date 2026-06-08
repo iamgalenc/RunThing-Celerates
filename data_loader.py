@@ -61,7 +61,7 @@ def parse_gpx_file(file_obj) -> Optional[pd.DataFrame]:
         return None
 
 
-def load_gpx_folder(folder_path: str) -> dict[str, pd.DataFrame]:
+def load_gpx_folder(folder_path: str, max_files: int = 100) -> dict[str, pd.DataFrame]:
     """
     Load all .gpx files from a local folder.
 
@@ -71,14 +71,17 @@ def load_gpx_folder(folder_path: str) -> dict[str, pd.DataFrame]:
     if not os.path.isdir(folder_path):
         return runs
 
-    for fname in sorted(os.listdir(folder_path)):
-        if fname.lower().endswith(".gpx"):
-            fpath = os.path.join(folder_path, fname)
-            df = parse_gpx_file(fpath)
-            if df is not None and len(df) > 0:
-                runs[fname] = df
+    gpx_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".gpx")]
+    gpx_files = sorted(gpx_files)[:max_files]
+
+    for fname in gpx_files:
+        fpath = os.path.join(folder_path, fname)
+        df = parse_gpx_file(fpath)
+        if df is not None and len(df) > 0:
+            runs[fname] = df
 
     return runs
+
 
 
 # ---------------------------------------------------------------------------

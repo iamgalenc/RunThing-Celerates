@@ -16,6 +16,12 @@ Run with:
 import sys
 import os
 
+# Detect if running in Streamlit Cloud / Deployed environment
+IS_CLOUD = (
+    os.environ.get("STREAMLIT_SHARING_AUTHOR_REPO") is not None
+    or os.environ.get("STREAMLIT_SECRETS_EXISTS") is not None
+)
+
 # Ensure local modules are importable regardless of working directory
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -216,9 +222,12 @@ with st.sidebar:
     st.markdown("---")
 
     st.markdown("### 📂 Data Source")
+    data_sources = ["Upload GPX Files", "Synthetic Demo Data"]
+    if not IS_CLOUD:
+        data_sources.append("Local Folder")
     data_source = st.radio(
         "Choose source",
-        ["Synthetic Demo Data", "Upload GPX Files", "Local Folder"],
+        data_sources,
         label_visibility="collapsed",
     )
 
@@ -227,9 +236,6 @@ with st.sidebar:
             with st.spinner("Generating synthetic GPX data…"):
                 st.session_state.runs_raw = get_synthetic_runs()
             st.success(f"Loaded {len(st.session_state.runs_raw)} runs!")
-        # Auto-load on first visit
-        if not st.session_state.runs_raw:
-            st.session_state.runs_raw = get_synthetic_runs()
 
     elif data_source == "Upload GPX Files":
         uploaded = st.file_uploader(
@@ -245,14 +251,17 @@ with st.sidebar:
             st.success(f"Loaded {len(new_runs)} file(s).")
 
     elif data_source == "Local Folder":
-        folder = st.text_input("Folder path", placeholder="/path/to/gpx/files")
-        if st.button("Load Folder", use_container_width=True) and folder:
-            runs = load_gpx_folder(folder)
-            if runs:
-                st.session_state.runs_raw.update(runs)
-                st.success(f"Loaded {len(runs)} GPX file(s).")
-            else:
-                st.warning("No valid .gpx files found.")
+        if IS_CLOUD:
+            st.error("Local Folder loading is disabled in cloud deployments for security and cloud container limitations.")
+        else:
+            folder = st.text_input("Folder path", placeholder="/path/to/gpx/files")
+            if st.button("Load Folder", use_container_width=True) and folder:
+                runs = load_gpx_folder(folder)
+                if runs:
+                    st.session_state.runs_raw.update(runs)
+                    st.success(f"Loaded {len(runs)} GPX file(s).")
+                else:
+                    st.warning("No valid .gpx files found.")
 
     st.markdown("---")
 
