@@ -211,6 +211,8 @@ if "reg_result" not in st.session_state:
     st.session_state.reg_result = None
 if "clf_result" not in st.session_state:
     st.session_state.clf_result = None
+if "last_data_source" not in st.session_state:
+    st.session_state.last_data_source = None
 
 
 # ---------------------------------------------------------------------------
@@ -230,6 +232,11 @@ with st.sidebar:
         data_sources,
         label_visibility="collapsed",
     )
+
+    # Clear loaded runs if data source has changed
+    if st.session_state.last_data_source != data_source:
+        st.session_state.runs_raw = {}
+        st.session_state.last_data_source = data_source
 
     if data_source == "Synthetic Demo Data":
         if st.button("Generate 50 Synthetic Runs", use_container_width=True):
