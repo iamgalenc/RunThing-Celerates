@@ -249,13 +249,27 @@ with st.sidebar:
             "Upload .gpx files", type=["gpx"], accept_multiple_files=True
         )
         if uploaded:
+            # Sync session state runs with currently uploaded files
+            uploaded_names = {f.name for f in uploaded}
+            
+            # Remove deleted runs
+            keys_to_remove = [k for k in st.session_state.runs_raw if k not in uploaded_names]
+            for k in keys_to_remove:
+                del st.session_state.runs_raw[k]
+                
+            # Add new runs
             new_runs = {}
             for f in uploaded:
-                df = parse_gpx_file(f)
-                if df is not None:
-                    new_runs[f.name] = df
-            st.session_state.runs_raw.update(new_runs)
-            st.success(f"Loaded {len(new_runs)} file(s).")
+                if f.name not in st.session_state.runs_raw:
+                    df = parse_gpx_file(f)
+                    if df is not None:
+                        new_runs[f.name] = df
+            if new_runs:
+                st.session_state.runs_raw.update(new_runs)
+                st.success(f"Loaded {len(new_runs)} file(s).")
+        else:
+            if st.session_state.runs_raw:
+                st.session_state.runs_raw = {}
 
     elif data_source == "Local Folder":
         if IS_CLOUD:
