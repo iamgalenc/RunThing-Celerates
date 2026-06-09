@@ -186,8 +186,8 @@ RUN_TYPE_COLORS = {
 # ---------------------------------------------------------------------------
 
 @st.cache_data(show_spinner=False)
-def get_synthetic_runs():
-    return generate_synthetic_runs(n_runs=50)
+def get_synthetic_runs(fitness_level: str = "mixed"):
+    return generate_synthetic_runs(n_runs=50, fitness_level=fitness_level)
 
 
 @st.cache_data(show_spinner=False)
@@ -239,9 +239,20 @@ with st.sidebar:
         st.session_state.last_data_source = data_source
 
     if data_source == "Synthetic Demo Data":
+        fitness_level = st.selectbox(
+            "Runner Fitness Level",
+            ["Mixed Group (Realistic)", "Beginner", "Intermediate", "Advanced"],
+            key="synthetic_fitness"
+        )
+        fit_map = {
+            "Mixed Group (Realistic)": "mixed",
+            "Beginner": "beginner",
+            "Intermediate": "intermediate",
+            "Advanced": "advanced"
+        }
         if st.button("Generate 50 Synthetic Runs", use_container_width=True):
             with st.spinner("Generating synthetic GPX data…"):
-                st.session_state.runs_raw = get_synthetic_runs()
+                st.session_state.runs_raw = get_synthetic_runs(fitness_level=fit_map[fitness_level])
             st.success(f"Loaded {len(st.session_state.runs_raw)} runs!")
 
     elif data_source == "Upload GPX Files":
@@ -978,6 +989,15 @@ with tabs[5]:
     hyp_fatigue= col2.slider("Fatigue Index (pace Δ)", -1.0, 2.0,  0.1, 0.1)
     hyp_dur    = col3.slider("Estimated Duration (min)", 10, 300,  60,   5)
 
+    # Estimate Running Power and Energy metrics for the hypothetical run
+    hyp_speed_kmh = (hyp_dist / (hyp_dur / 60))
+    hyp_v_ms = hyp_speed_kmh / 3.6
+    hyp_grade = hyp_gain / (hyp_dist * 1000)
+    hyp_cr = 1.55 + 34.6 * hyp_grade + 14.8 * (hyp_grade ** 2)
+    hyp_avg_power = hyp_cr * hyp_v_ms
+    hyp_max_power = hyp_avg_power * (1.2 + hyp_var * 0.4) # scale max power by variability
+    hyp_total_energy = hyp_avg_power * (hyp_dur * 60) / 1000.0
+
     hyp_features = {
         "total_dist_km":           hyp_dist,
         "total_elevation_gain_m":  hyp_gain,
@@ -988,6 +1008,9 @@ with tabs[5]:
         "avg_pace_min_km":         hyp_dur / hyp_dist,  # rough initial estimate
         "std_pace_min_km":         hyp_var,
         "total_duration_min":      hyp_dur,
+        "avg_power_w_kg":          hyp_avg_power,
+        "max_power_w_kg":          hyp_max_power,
+        "total_energy_kj_kg":      hyp_total_energy,
     }
 
     col_reg, col_clf = st.columns(2)

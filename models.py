@@ -52,6 +52,8 @@ REGRESSION_FEATURES = [
     "run_type_code",
     "avg_pace_variability",
     "fatigue_index",
+    "avg_power_w_kg",
+    "total_energy_kj_kg",
 ]
 
 CLASSIFICATION_FEATURES = [
@@ -63,6 +65,9 @@ CLASSIFICATION_FEATURES = [
     "fatigue_index",
     "total_duration_min",
     "elev_gain_per_km",
+    "avg_power_w_kg",
+    "max_power_w_kg",
+    "total_energy_kj_kg",
 ]
 
 REGRESSION_TARGET = "avg_pace_min_km"

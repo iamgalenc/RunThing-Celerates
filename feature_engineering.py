@@ -89,6 +89,19 @@ def compute_point_features(df: pd.DataFrame) -> pd.DataFrame:
     df["elev_gain"] = np.where(elev_diff > 0, elev_diff, 0).cumsum()
     df["elev_loss"] = np.where(elev_diff < 0, -elev_diff, 0).cumsum()
 
+    # ---- running power features (Minetti metabolic cost model) ----------
+    v_ms = df["speed_kmh"].values / 3.6
+    seg_dist_m = df["segment_dist_m"].values
+    grade = np.zeros(len(df))
+    valid_mask = seg_dist_m > 0.2
+    grade[valid_mask] = df["elev_diff"].values[valid_mask] / seg_dist_m[valid_mask]
+    df["grade"] = np.clip(grade, -0.4, 0.4)
+    
+    # Minetti equation for metabolic cost (J/kg/m)
+    cr = 1.55 + 34.6 * df["grade"].values + 14.8 * (df["grade"].values ** 2)
+    # Power = Cost * Velocity
+    df["est_power_w_kg"] = cr * v_ms
+
     # ---- rolling stats ----------------------------------------------------
     df["rolling_pace"] = (
         df["pace_min_km"]
@@ -165,6 +178,12 @@ def compute_run_summary(
     pace_second = df["pace_min_km"].iloc[midpoint:].mean()
     fatigue_index = pace_second - pace_first  # positive = slowing down
 
+    # Running Power summary metrics
+    dt_s = df["elapsed_s"].diff().fillna(0).values
+    total_energy_kj_kg = np.sum(df["est_power_w_kg"].values * dt_s) / 1000.0
+    avg_power = df["est_power_w_kg"].dropna().mean()
+    max_power = df["est_power_w_kg"].dropna().max()
+
     return {
         "run_name": run_name,
         "run_type": run_type,
@@ -182,6 +201,9 @@ def compute_run_summary(
         "fatigue_index": round(fatigue_index, 3),
         "elev_gain_per_km": round(total_elevation_gain / max(total_dist_km, 0.01), 2),
         "num_points": len(df),
+        "avg_power_w_kg": round(avg_power, 2),
+        "max_power_w_kg": round(max_power, 2),
+        "total_energy_kj_kg": round(total_energy_kj_kg, 1),
     }
 
 
