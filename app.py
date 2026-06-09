@@ -245,8 +245,14 @@ with st.sidebar:
             st.success(f"Loaded {len(st.session_state.runs_raw)} runs!")
 
     elif data_source == "Upload GPX Files":
+        if "uploader_key" not in st.session_state:
+            st.session_state.uploader_key = "gpx_uploader_0"
+
         uploaded = st.file_uploader(
-            "Upload .gpx files", type=["gpx"], accept_multiple_files=True
+            "Upload .gpx files",
+            type=["gpx"],
+            accept_multiple_files=True,
+            key=st.session_state.uploader_key
         )
         if uploaded:
             # Sync session state runs with currently uploaded files
@@ -283,6 +289,19 @@ with st.sidebar:
                     st.success(f"Loaded {len(runs)} GPX file(s).")
                 else:
                     st.warning("No valid .gpx files found.")
+
+    # Delete All button (only if runs are loaded)
+    if st.session_state.runs_raw:
+        st.markdown("")
+        if st.button("🗑️ Delete All GPX Files", use_container_width=True):
+            st.session_state.runs_raw = {}
+            st.session_state.reg_result = None
+            st.session_state.clf_result = None
+            if "uploader_key" in st.session_state:
+                # Force reset the file uploader by incrementing key
+                idx = int(st.session_state.uploader_key.split("_")[-1])
+                st.session_state.uploader_key = f"gpx_uploader_{idx + 1}"
+            st.rerun()
 
     st.markdown("---")
 
