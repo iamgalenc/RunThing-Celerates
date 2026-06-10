@@ -44,6 +44,7 @@ from models import (
     train_run_classifier,
     predict_pace,
     classify_run,
+    load_model,
 )
 from gpx_exporter import run_to_gpx_bytes, runs_to_zip_bytes
 
@@ -213,6 +214,40 @@ if "clf_result" not in st.session_state:
     st.session_state.clf_result = None
 if "last_data_source" not in st.session_state:
     st.session_state.last_data_source = None
+
+
+def try_autoload_models():
+    """Dynamically load models from disk if they exist and match the selected model types."""
+    if not st.session_state.get("runs_raw"):
+        return
+
+    # 1. Regression model autoloading
+    selected_reg = st.session_state.get("reg_model", "random_forest")
+    reg_path = os.path.join("saved_models", f"pace_regression_{selected_reg}.joblib")
+    if os.path.exists(reg_path):
+        try:
+            if (st.session_state.reg_result is None or 
+                st.session_state.reg_result.get("model_name") != selected_reg):
+                loaded = load_model(reg_path)
+                if loaded:
+                    st.session_state.reg_result = loaded
+        except Exception:
+            pass
+
+    # 2. Classification model autoloading
+    selected_clf = st.session_state.get("clf_model", "random_forest")
+    clf_path = os.path.join("saved_models", f"run_classifier_{selected_clf}.joblib")
+    if os.path.exists(clf_path):
+        try:
+            if (st.session_state.clf_result is None or 
+                st.session_state.clf_result.get("model_name") != selected_clf):
+                loaded = load_model(clf_path)
+                if loaded:
+                    st.session_state.clf_result = loaded
+        except Exception:
+            pass
+
+try_autoload_models()
 
 
 # ---------------------------------------------------------------------------
