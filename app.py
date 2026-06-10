@@ -1269,7 +1269,7 @@ with tabs[7]:
                     "Enter Gemini API Key to chat:",
                     value=st.session_state.gemini_api_key,
                     type="password",
-                    placeholder="AIzaSy...",
+                    placeholder="...",
                     help="Get an API key from Google AI Studio. It will only be stored in this session.",
                 )
                 if entered_key != st.session_state.gemini_api_key:
