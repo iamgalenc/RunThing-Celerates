@@ -81,8 +81,14 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _split(X, y, test_size=0.25, random_state=42):
-    return train_test_split(X, y, test_size=test_size, random_state=random_state)
+def _split(X, y, test_size=0.25, random_state=42, stratify=None):
+    """
+    Train-test split. Stratify for classification; not used for regression.
+    """
+    if stratify is not None:
+        return train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=stratify)
+    else:
+        return train_test_split(X, y, test_size=test_size, random_state=random_state)
 
 
 # ---------------------------------------------------------------------------
