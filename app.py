@@ -220,7 +220,7 @@ if "last_data_source" not in st.session_state:
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    st.markdown("## 🏃 GPX Analytics")
+    st.markdown("## 🏃 Runthing")
     st.markdown("---")
 
     st.markdown("### 📂 Data Source")
@@ -1194,7 +1194,7 @@ with tabs[6]:
 # TAB 7 — AI Running Coach
 # ============================================================
 with tabs[7]:
-    st.subheader("💬 Chat with Antigravity Pace Coach")
+    st.subheader("💬 Chat with Runthing Coach")
     st.markdown(
         "Ask questions about your pacing, run classifications, fatigue levels, or training recommendations. "
         "The coach has full context of your uploaded runs."
@@ -1223,7 +1223,7 @@ with tabs[7]:
                 st.session_state.messages = [
                     {
                         "role": "assistant",
-                        "content": "Hi! I am **Antigravity Pace Coach** 🏃. I've analyzed your GPX running history and am ready to chat. Ask me about your pacing, run classifications, fatigue levels, or training recommendations!"
+                        "content": "Hi! I am **Runthing Pace Coach** 🏃. I've analyzed your GPX running history and am ready to chat. Ask me about your pacing, run classifications, fatigue levels, or training recommendations!"
                     }
                 ]
                 st.rerun()
@@ -1251,7 +1251,7 @@ with tabs[7]:
                 st.session_state.messages = [
                     {
                         "role": "assistant",
-                        "content": "Hi! I am **Antigravity Pace Coach** 🏃. I've analyzed your GPX running history and am ready to chat. Ask me about your pacing, run classifications, fatigue levels, or training recommendations!"
+                        "content": "Hi! I am **Runthing Pace Coach** 🏃. I've analyzed your GPX running history and am ready to chat. Ask me about your pacing, run classifications, fatigue levels, or training recommendations!"
                     }
                 ]
 
@@ -1320,7 +1320,7 @@ with tabs[7]:
 
                     runs_table = get_runs_context_markdown(feat_df)
                     
-                    SYSTEM_INSTRUCTION = """You are "Antigravity Pace Coach", an elite AI running coach and GPX analytics expert.
+                    SYSTEM_INSTRUCTION = """You are "Runthing Pace Coach", an elite AI running coach and GPX analytics expert.
 You help runners analyze their GPX workouts, understand their running form (like pace distribution, elevation impacts, and fatigue trends), and guide them with data-backed coaching advice.
 
 You are given a dataset containing summary features of the user's runs:
