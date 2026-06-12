@@ -44,7 +44,6 @@ from models import (
     train_run_classifier,
     predict_pace,
     classify_run,
-    load_model,
 )
 from gpx_exporter import run_to_gpx_bytes, runs_to_zip_bytes
 
@@ -216,46 +215,12 @@ if "last_data_source" not in st.session_state:
     st.session_state.last_data_source = None
 
 
-def try_autoload_models():
-    """Dynamically load models from disk if they exist and match the selected model types."""
-    if not st.session_state.get("runs_raw"):
-        return
-
-    # 1. Regression model autoloading
-    selected_reg = st.session_state.get("reg_model", "random_forest")
-    reg_path = os.path.join("saved_models", f"pace_regression_{selected_reg}.joblib")
-    if os.path.exists(reg_path):
-        try:
-            if (st.session_state.reg_result is None or 
-                st.session_state.reg_result.get("model_name") != selected_reg):
-                loaded = load_model(reg_path)
-                if loaded:
-                    st.session_state.reg_result = loaded
-        except Exception:
-            pass
-
-    # 2. Classification model autoloading
-    selected_clf = st.session_state.get("clf_model", "random_forest")
-    clf_path = os.path.join("saved_models", f"run_classifier_{selected_clf}.joblib")
-    if os.path.exists(clf_path):
-        try:
-            if (st.session_state.clf_result is None or 
-                st.session_state.clf_result.get("model_name") != selected_clf):
-                loaded = load_model(clf_path)
-                if loaded:
-                    st.session_state.clf_result = loaded
-        except Exception:
-            pass
-
-try_autoload_models()
-
-
 # ---------------------------------------------------------------------------
 # Sidebar — Data Loading
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    st.markdown("## 🏃 GPX Analytics")
+    st.markdown("## 🏃 Runthing")
     st.markdown("---")
 
     st.markdown("### 📂 Data Source")
@@ -1229,7 +1194,7 @@ with tabs[6]:
 # TAB 7 — AI Running Coach
 # ============================================================
 with tabs[7]:
-    st.subheader("💬 Chat with Antigravity Pace Coach")
+    st.subheader("💬 Chat with Runthing Coach")
     st.markdown(
         "Ask questions about your pacing, run classifications, fatigue levels, or training recommendations. "
         "The coach has full context of your uploaded runs."
@@ -1258,7 +1223,7 @@ with tabs[7]:
                 st.session_state.messages = [
                     {
                         "role": "assistant",
-                        "content": "Hi! I am **Antigravity Pace Coach** 🏃. I've analyzed your GPX running history and am ready to chat. Ask me about your pacing, run classifications, fatigue levels, or training recommendations!"
+                        "content": "Hi! I am **Runthing Pace Coach** 🏃. I've analyzed your GPX running history and am ready to chat. Ask me about your pacing, run classifications, fatigue levels, or training recommendations!"
                     }
                 ]
                 st.rerun()
@@ -1269,7 +1234,7 @@ with tabs[7]:
                     "Enter Gemini API Key to chat:",
                     value=st.session_state.gemini_api_key,
                     type="password",
-                    placeholder="...",
+                    placeholder="AIzaSy...",
                     help="Get an API key from Google AI Studio. It will only be stored in this session.",
                 )
                 if entered_key != st.session_state.gemini_api_key:
@@ -1286,7 +1251,7 @@ with tabs[7]:
                 st.session_state.messages = [
                     {
                         "role": "assistant",
-                        "content": "Hi! I am **Antigravity Pace Coach** 🏃. I've analyzed your GPX running history and am ready to chat. Ask me about your pacing, run classifications, fatigue levels, or training recommendations!"
+                        "content": "Hi! I am **Runthing Pace Coach** 🏃. I've analyzed your GPX running history and am ready to chat. Ask me about your pacing, run classifications, fatigue levels, or training recommendations!"
                     }
                 ]
 
@@ -1355,7 +1320,7 @@ with tabs[7]:
 
                     runs_table = get_runs_context_markdown(feat_df)
                     
-                    SYSTEM_INSTRUCTION = """You are "Antigravity Pace Coach", an elite AI running coach and GPX analytics expert.
+                    SYSTEM_INSTRUCTION = """You are "Runthing Pace Coach", an elite AI running coach and GPX analytics expert.
 You help runners analyze their GPX workouts, understand their running form (like pace distribution, elevation impacts, and fatigue trends), and guide them with data-backed coaching advice.
 
 You are given a dataset containing summary features of the user's runs:
