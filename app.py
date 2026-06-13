@@ -421,6 +421,8 @@ tabs = st.tabs([
     "🏷️ ML: Run Classifier",
     "🔮 Predict New Run",
     "😴 Fatigue Trends",
+    "⚡ Running Power",
+    "🔔 Performance Alerts", 
     "💬 AI Running Coach",
 ])
 
@@ -1191,9 +1193,424 @@ with tabs[6]:
 
 
 # ============================================================
-# TAB 7 — AI Running Coach
+# TAB 7 — Running Power Analysis
 # ============================================================
 with tabs[7]:
+<<<<<<< HEAD
+    st.subheader("⚡ Running Power Analysis")
+    st.markdown(
+        "Estimasi daya lari (*running power*) dihitung menggunakan "
+        "**model metabolik Minetti**, yang memperhitungkan kecepatan dan "
+        "kemiringan rute. Satuan: **Watt per kilogram berat badan (W/kg)**."
+    )
+ 
+    # ── Pastikan kolom power tersedia ─────────────────────────────────────
+    power_cols = ["avg_power_w_kg", "max_power_w_kg", "total_energy_kj_kg"]
+    missing_cols = [c for c in power_cols if c not in feat_df.columns]
+ 
+    if missing_cols:
+        st.warning(
+            f"Kolom power tidak ditemukan: {missing_cols}. "
+            "Pastikan `feature_engineering.py` sudah diperbarui."
+        )
+    else:
+ 
+        # ── KPI Power Row ──────────────────────────────────────────────────
+        avg_pw   = feat_df["avg_power_w_kg"].mean()
+        max_pw   = feat_df["max_power_w_kg"].max()
+        total_ej = feat_df["total_energy_kj_kg"].sum()
+ 
+        kp1, kp2, kp3 = st.columns(3)
+        kp1.metric("Rata-rata Power",    f"{avg_pw:.2f} W/kg")
+        kp2.metric("Peak Power (Fleet)", f"{max_pw:.2f} W/kg")
+        kp3.metric("Total Energi",       f"{total_ej:.1f} kJ/kg")
+ 
+        st.markdown("---")
+ 
+        # ── CHART 1: Avg Power per Run (Bar Chart) ─────────────────────────
+        st.markdown("#### ⚡ Rata-rata Power per Lari")
+ 
+        power_bar_df = feat_df[["run_name", "avg_power_w_kg", "run_type"]].copy()
+        power_bar_df = power_bar_df.sort_values("avg_power_w_kg", ascending=False)
+        power_bar_df["short_name"] = power_bar_df["run_name"].str.replace(
+            r"\.(gpx|csv)$", "", regex=True
+        )
+ 
+        fig_bar = px.bar(
+            power_bar_df,
+            x="short_name",
+            y="avg_power_w_kg",
+            color="run_type",
+            color_discrete_map=RUN_TYPE_COLORS,
+            labels={"short_name": "Nama Lari", "avg_power_w_kg": "Avg Power (W/kg)"},
+            height=380,
+        )
+        fig_bar.update_layout(**PLOTLY_LAYOUT)
+        fig_bar.update_traces(marker_line_width=0)
+        st.plotly_chart(fig_bar, use_container_width=True)
+ 
+        # ── CHART 2: Power vs Pace Scatter ─────────────────────────────────
+        st.markdown("#### 🔵 Power vs Pace per Run Type")
+        st.caption(
+            "Run dengan power tinggi dan pace cepat (kiri atas) "
+            "menandakan sesi intensitas tinggi yang efisien."
+        )
+ 
+        fig_scatter = px.scatter(
+            feat_df,
+            x="avg_pace_min_km",
+            y="avg_power_w_kg",
+            color="run_type",
+            size="total_dist_km",
+            color_discrete_map=RUN_TYPE_COLORS,
+            hover_data=["run_name", "total_dist_km", "total_elevation_gain_m"],
+            labels={
+                "avg_pace_min_km":  "Avg Pace (min/km)",
+                "avg_power_w_kg":   "Avg Power (W/kg)",
+                "total_dist_km":    "Jarak (km)",
+            },
+            height=420,
+        )
+        fig_scatter.update_layout(**PLOTLY_LAYOUT)
+        st.plotly_chart(fig_scatter, use_container_width=True)
+ 
+        # ── CHART 3: Power Curve per Run (detail 1 run) ────────────────────
+        st.markdown("---")
+        st.markdown("#### 📉 Power Curve — Detail Per Lari")
+ 
+        selected_power_run = st.selectbox(
+            "Pilih lari untuk melihat kurva power:",
+            sorted(runs_raw.keys()),
+            key="power_run_select",
+        )
+ 
+        enriched_pw = get_enriched(runs_raw[selected_power_run], selected_power_run)
+ 
+        if "est_power_w_kg" not in enriched_pw.columns:
+            st.warning("Kolom `est_power_w_kg` tidak ada di data ini.")
+        else:
+            fig_curve = make_subplots(
+                rows=2, cols=1,
+                shared_xaxes=True,
+                row_heights=[0.6, 0.4],
+                subplot_titles=["Power (W/kg) vs Jarak", "Elevasi (m) vs Jarak"],
+                vertical_spacing=0.10,
+            )
+ 
+            # Power line
+            fig_curve.add_trace(
+                go.Scatter(
+                    x=enriched_pw["dist_km"],
+                    y=enriched_pw["est_power_w_kg"].clip(0, 15),
+                    mode="lines",
+                    line=dict(color=ACCENT_COLOR, width=1.5),
+                    name="Power (W/kg)",
+                    fill="tozeroy",
+                    fillcolor="rgba(0,229,160,0.08)",
+                ),
+                row=1, col=1,
+            )
+ 
+            # Rolling avg power
+            rolling_power = (
+                enriched_pw["est_power_w_kg"]
+                .rolling(window=20, min_periods=1, center=True)
+                .mean()
+                .clip(0, 15)
+            )
+            fig_curve.add_trace(
+                go.Scatter(
+                    x=enriched_pw["dist_km"],
+                    y=rolling_power,
+                    mode="lines",
+                    line=dict(color=ACCENT2, width=2.5, dash="dot"),
+                    name="Rolling Avg Power",
+                ),
+                row=1, col=1,
+            )
+ 
+            # Elevation line
+            fig_curve.add_trace(
+                go.Scatter(
+                    x=enriched_pw["dist_km"],
+                    y=enriched_pw["elevation"],
+                    mode="lines",
+                    line=dict(color="#4FC3F7", width=1.5),
+                    name="Elevasi (m)",
+                    fill="tozeroy",
+                    fillcolor="rgba(79,195,247,0.07)",
+                ),
+                row=2, col=1,
+            )
+ 
+            fig_curve.update_layout(
+                height=500,
+                legend=dict(orientation="h", y=1.08),
+                **{k: v for k, v in PLOTLY_LAYOUT.items() if k not in ("xaxis", "yaxis")},
+            )
+            fig_curve.update_xaxes(
+                title_text="Jarak (km)", row=2, col=1,
+                gridcolor="rgba(255,255,255,0.06)",
+            )
+            fig_curve.update_yaxes(
+                title_text="Power (W/kg)", row=1, col=1,
+                gridcolor="rgba(255,255,255,0.06)",
+            )
+            fig_curve.update_yaxes(
+                title_text="Elevasi (m)", row=2, col=1,
+                gridcolor="rgba(255,255,255,0.06)",
+            )
+            st.plotly_chart(fig_curve, use_container_width=True)
+ 
+            # Penjelasan chart
+            st.info(
+                "💡 **Cara membaca chart ini:** "
+                "Lonjakan power yang bersamaan dengan kenaikan elevasi menandakan tanjakan. "
+                "Lonjakan power tanpa kenaikan elevasi bisa berarti sprint atau percepatan mendadak."
+            )
+ 
+        # ── CHART 4: Box Plot distribusi power per tipe lari ──────────────
+        st.markdown("---")
+        st.markdown("#### 📦 Distribusi Power per Tipe Lari")
+ 
+        fig_box = px.box(
+            feat_df,
+            x="run_type",
+            y="avg_power_w_kg",
+            color="run_type",
+            color_discrete_map=RUN_TYPE_COLORS,
+            points="all",
+            labels={
+                "run_type":       "Tipe Lari",
+                "avg_power_w_kg": "Avg Power (W/kg)",
+            },
+            height=380,
+        )
+        fig_box.update_layout(**PLOTLY_LAYOUT)
+        st.plotly_chart(fig_box, use_container_width=True)
+ 
+        st.caption(
+            "Interval run umumnya memiliki power tertinggi karena sprint pendek "
+            "dengan intensitas maksimal. Easy run berada di rentang power terendah."
+        )
+
+
+# ============================================================
+# TAB 8 — Performance Alerts
+# ============================================================
+with tabs[8]:
+    st.subheader("🔔 Performance Alerts")
+    st.markdown(
+        "Sistem deteksi otomatis yang membandingkan performa lari terbaru "
+        "terhadap **rata-rata historis** menggunakan statistik deskriptif. "
+        "Alert muncul jika ditemukan pola yang perlu diperhatikan."
+    )
+ 
+    # Butuh minimal 5 runs
+    if len(feat_df) < 5:
+        st.warning("Butuh minimal 5 data lari untuk mengaktifkan sistem alert.")
+    else:
+ 
+        # Hitung statistik baseline
+        baseline_pace     = feat_df["avg_pace_min_km"].mean()
+        baseline_pace_std = feat_df["avg_pace_min_km"].std()
+        baseline_fatigue  = feat_df["fatigue_index"].mean()
+        baseline_dist     = feat_df["total_dist_km"].mean()
+        baseline_dist_std = feat_df["total_dist_km"].std()
+ 
+        # 5 lari terakhir
+        recent_df = feat_df.tail(5).copy()
+        recent_avg_pace    = recent_df["avg_pace_min_km"].mean()
+        recent_avg_fatigue = recent_df["fatigue_index"].mean()
+        recent_total_km    = recent_df["total_dist_km"].sum()
+        recent_avg_power   = recent_df["avg_power_w_kg"].mean() if "avg_power_w_kg" in recent_df.columns else None
+ 
+        baseline_power     = feat_df["avg_power_w_kg"].mean() if "avg_power_w_kg" in feat_df.columns else None
+        baseline_power_std = feat_df["avg_power_w_kg"].std()  if "avg_power_w_kg" in feat_df.columns else None
+ 
+        # Logika deteksi alert
+        alerts = []
+ 
+        pace_threshold = baseline_pace + baseline_pace_std
+        if recent_avg_pace > pace_threshold:
+            delta = recent_avg_pace - baseline_pace
+            alerts.append({
+                "level": "warning", "icon": "🐢", "title": "Pace Menurun",
+                "detail": (
+                    f"Rata-rata pace 5 lari terakhir **{recent_avg_pace:.2f} min/km** "
+                    f"lebih lambat **{delta:.2f} menit/km** dibanding baseline "
+                    f"({baseline_pace:.2f} min/km). "
+                    "Pertimbangkan recovery run atau cek kualitas tidur."
+                ),
+            })
+ 
+        pace_good_threshold = baseline_pace - baseline_pace_std
+        if recent_avg_pace < pace_good_threshold:
+            delta = baseline_pace - recent_avg_pace
+            alerts.append({
+                "level": "success", "icon": "🚀", "title": "Peningkatan Pace Signifikan",
+                "detail": (
+                    f"Pace 5 lari terakhir **{recent_avg_pace:.2f} min/km** — "
+                    f"lebih cepat **{delta:.2f} menit/km** dari baseline. Progres yang bagus!"
+                ),
+            })
+ 
+        if recent_avg_fatigue > 1.0:
+            alerts.append({
+                "level": "error", "icon": "🚨", "title": "Potensi Overtraining",
+                "detail": (
+                    f"Fatigue index **{recent_avg_fatigue:.2f}** melampaui batas kritis (1.00). "
+                    "Sangat disarankan untuk ambil rest day."
+                ),
+            })
+        elif recent_avg_fatigue > 0.5:
+            alerts.append({
+                "level": "warning", "icon": "😴", "title": "Indeks Kelelahan Tinggi",
+                "detail": (
+                    f"Rata-rata fatigue index 5 lari terakhir: **{recent_avg_fatigue:.2f}** "
+                    "(threshold: 0.50). Kamu cenderung melambat di paruh kedua lari. "
+                    "Coba kurangi intensitas atau tambah istirahat."
+                ),
+            })
+ 
+        typical_5run_km = baseline_dist * 5
+        if recent_total_km > typical_5run_km * 1.8:
+            alerts.append({
+                "level": "warning", "icon": "📈", "title": "Volume Latihan Meningkat Drastis",
+                "detail": (
+                    f"Total jarak 5 lari terakhir: **{recent_total_km:.1f} km** "
+                    f"(tipikal: {typical_5run_km:.1f} km). "
+                    "Ikuti aturan 10% — naikkan volume maksimal 10% per minggu."
+                ),
+            })
+ 
+        if recent_avg_power is not None and baseline_power is not None:
+            power_drop_threshold = baseline_power - baseline_power_std
+            if recent_avg_power < power_drop_threshold:
+                delta_pw = baseline_power - recent_avg_power
+                alerts.append({
+                    "level": "warning", "icon": "⚡", "title": "Output Power Menurun",
+                    "detail": (
+                        f"Rata-rata power 5 lari terakhir: **{recent_avg_power:.2f} W/kg** "
+                        f"(baseline: {baseline_power:.2f} W/kg, turun {delta_pw:.2f} W/kg). "
+                        "Bisa menandakan kelelahan otot atau kurang nutrisi."
+                    ),
+                })
+ 
+        if not alerts:
+            alerts.append({
+                "level": "success", "icon": "✅", "title": "Semua Metrik Normal",
+                "detail": (
+                    "Tidak ada anomali pada 5 lari terakhir. "
+                    "Performa kamu stabil dan konsisten. Pertahankan!"
+                ),
+            })
+ 
+        # Tampilkan alert cards
+        st.markdown("### 📋 Hasil Deteksi")
+        st.caption("Berdasarkan perbandingan 5 lari terakhir vs seluruh histori lari.")
+ 
+        for alert in alerts:
+            msg = f"**{alert['icon']} {alert['title']}** — {alert['detail']}"
+            if alert["level"] == "error":
+                st.error(msg)
+            elif alert["level"] == "warning":
+                st.warning(msg)
+            else:
+                st.success(msg)
+ 
+        st.markdown("---")
+ 
+        # CHART 1: Tren Pace
+        st.markdown("#### 📉 Tren Pace — 5 Lari Terakhir vs Baseline")
+ 
+        pace_trend_df = feat_df[["run_name", "avg_pace_min_km"]].copy()
+        pace_trend_df["index"] = range(1, len(pace_trend_df) + 1)
+ 
+        fig_pace_trend = go.Figure()
+        fig_pace_trend.add_trace(go.Scatter(
+            x=pace_trend_df["index"], y=pace_trend_df["avg_pace_min_km"],
+            mode="lines+markers",
+            line=dict(color="#4FC3F7", width=1.5),
+            marker=dict(size=5), name="Pace per Lari",
+        ))
+        recent_idx = pace_trend_df.tail(5)
+        fig_pace_trend.add_trace(go.Scatter(
+            x=recent_idx["index"], y=recent_idx["avg_pace_min_km"],
+            mode="lines+markers",
+            line=dict(color=ACCENT2, width=2.5),
+            marker=dict(size=9), name="5 Lari Terakhir",
+        ))
+        fig_pace_trend.add_hline(
+            y=baseline_pace, line_dash="dash", line_color=ACCENT_COLOR,
+            annotation_text=f"Baseline: {baseline_pace:.2f}", annotation_position="top left",
+        )
+        fig_pace_trend.add_hrect(
+            y0=pace_threshold, y1=pace_trend_df["avg_pace_min_km"].max() + 0.5,
+            fillcolor="rgba(255,107,53,0.07)", line_width=0,
+            annotation_text="Zona Lambat", annotation_position="top right",
+        )
+        fig_pace_trend.update_layout(
+            height=360, yaxis_title="Pace (min/km)", xaxis_title="Urutan Lari",
+            **PLOTLY_LAYOUT,
+        )
+        st.plotly_chart(fig_pace_trend, use_container_width=True)
+ 
+        # CHART 2: Tren Fatigue Index
+        st.markdown("#### 😴 Tren Fatigue Index")
+ 
+        fig_fatigue = go.Figure()
+        fig_fatigue.add_trace(go.Bar(
+            x=list(range(1, len(feat_df) + 1)),
+            y=feat_df["fatigue_index"],
+            marker_color=[
+                "#E040FB" if v > 1.0 else ACCENT2 if v > 0.5 else ACCENT_COLOR
+                for v in feat_df["fatigue_index"]
+            ],
+            name="Fatigue Index",
+        ))
+        fig_fatigue.add_hline(
+            y=0.5, line_dash="dot", line_color=ACCENT2,
+            annotation_text="Threshold 0.5", annotation_position="top left",
+        )
+        fig_fatigue.add_hline(
+            y=1.0, line_dash="dot", line_color="#E040FB",
+            annotation_text="Kritis 1.0", annotation_position="top left",
+        )
+        fig_fatigue.update_layout(
+            height=320, yaxis_title="Fatigue Index", xaxis_title="Urutan Lari",
+            **PLOTLY_LAYOUT,
+        )
+        st.plotly_chart(fig_fatigue, use_container_width=True)
+        st.caption("🟢 Normal (< 0.5)  |  🟠 Perhatian (0.5–1.0)  |  🟣 Kritis (> 1.0)")
+ 
+        # Tabel ringkasan
+        st.markdown("---")
+        st.markdown("#### 📄 Ringkasan 5 Lari Terakhir")
+ 
+        display_cols = ["run_name", "run_type", "total_dist_km",
+                        "avg_pace_min_km", "fatigue_index", "avg_pace_variability"]
+        if "avg_power_w_kg" in recent_df.columns:
+            display_cols.append("avg_power_w_kg")
+        display_cols = [c for c in display_cols if c in recent_df.columns]
+ 
+        rename_map = {
+            "run_name": "Nama Lari", "run_type": "Tipe",
+            "total_dist_km": "Jarak (km)", "avg_pace_min_km": "Avg Pace",
+            "fatigue_index": "Fatigue", "avg_pace_variability": "Pace Var",
+            "avg_power_w_kg": "Avg Power (W/kg)",
+        }
+        show_df = recent_df[display_cols].rename(columns=rename_map)
+        for col in show_df.select_dtypes(include=[float]).columns:
+            show_df[col] = show_df[col].round(2)
+        st.dataframe(show_df, use_container_width=True, hide_index=True)
+
+# ============================================================
+# TAB 9 — AI Running Coach
+# ============================================================
+with tabs[9]:
+=======
+>>>>>>> 1261f0a5dd19df8f8e9602e35482245f76827467
     st.subheader("💬 Chat with Runthing Coach")
     st.markdown(
         "Ask questions about your pacing, run classifications, fatigue levels, or training recommendations. "

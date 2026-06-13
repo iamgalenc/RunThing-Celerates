@@ -81,8 +81,14 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _split(X, y, test_size=0.25, random_state=42):
-    return train_test_split(X, y, test_size=test_size, random_state=random_state)
+def _split(X, y, test_size=0.25, random_state=42, stratify=None):
+    """
+    Train-test split. Stratify for classification; not used for regression.
+    """
+    if stratify is not None:
+        return train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=stratify)
+    else:
+        return train_test_split(X, y, test_size=test_size, random_state=random_state)
 
 
 # ---------------------------------------------------------------------------
@@ -171,9 +177,7 @@ def train_pace_regression(
 
     # Persist model
     model_path = os.path.join(MODEL_DIR, f"pace_regression_{model_name}.joblib")
-    joblib.dump(pipeline, model_path)
-
-    return {
+    result = {
         "model_name": model_name,
         "pipeline": pipeline,
         "features": available,
@@ -189,6 +193,9 @@ def train_pace_regression(
         "test_size_n": len(X_test),
         "model_path": model_path,
     }
+    joblib.dump(result, model_path)
+
+    return result
 
 
 def predict_pace(pipeline, feature_values: dict, features: list) -> float:
@@ -247,7 +254,11 @@ def train_run_classifier(
     X = df_clean[available].values
     y = df_clean[CLASSIFICATION_TARGET].values.astype(int)
 
-    X_train, X_test, y_train, y_test = _split(X, y, test_size=test_size)
+    try:
+        X_train, X_test, y_train, y_test = _split(X, y, test_size=test_size, stratify=y)
+    except ValueError:
+        # Fallback to standard split if class counts are too low (e.g. only 1 sample for a class)
+        X_train, X_test, y_train, y_test = _split(X, y, test_size=test_size, stratify=None)
 
     if model_name == "logistic_regression":
         estimator = LogisticRegression(C=lr_C, max_iter=1000, random_state=42)
@@ -304,9 +315,7 @@ def train_run_classifier(
 
     # Persist
     model_path = os.path.join(MODEL_DIR, f"run_classifier_{model_name}.joblib")
-    joblib.dump(pipeline, model_path)
-
-    return {
+    result = {
         "model_name": model_name,
         "pipeline": pipeline,
         "features": available,
@@ -326,6 +335,9 @@ def train_run_classifier(
         "unique_classes": unique_classes,
         "model_path": model_path,
     }
+    joblib.dump(result, model_path)
+
+    return result
 
 
 def classify_run(pipeline, feature_values: dict, features: list) -> tuple[str, dict]:
@@ -352,7 +364,14 @@ def classify_run(pipeline, feature_values: dict, features: list) -> tuple[str, d
 # ---------------------------------------------------------------------------
 
 def load_model(model_path: str):
-    """Load a previously saved joblib pipeline."""
+    """Load a previously saved model (either raw pipeline or full result dict)."""
     if os.path.exists(model_path):
-        return joblib.load(model_path)
+        loaded = joblib.load(model_path)
+        if isinstance(loaded, dict) and "pipeline" in loaded:
+            return loaded
+        # Legacy fallback wrapper for backward compatibility
+        return {
+            "pipeline": loaded,
+            "features": None,
+        }
     return None
