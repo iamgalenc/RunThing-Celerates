@@ -1,6 +1,6 @@
 # GPX Running Analytics Dashboard
 
-Live Demo: [GPX Running Analytics on Streamlit](https://runthing-celerates.streamlit.app/)
+Live Demo: https://runthing-celerates.streamlit.app/
 
 An end-to-end Python pipeline for parsing GPX files, engineering advanced run features, visualizing routes and pace profiles, training Machine Learning regression/classification models, and interacting with an AI Pace Coach powered by the Google GenAI SDK.
 
@@ -15,6 +15,8 @@ This dashboard is built with Streamlit, Plotly, and scikit-learn. It allows runn
 - Run Type Classification Pipeline: Classifiers (Random Forest, Logistic Regression, Gradient Boosting, Support Vector Classifier, Decision Tree) to categorize runs as easy, tempo, interval, or long.
 - Scenario Simulator: Sliders to configure hypothetical runs and predict their expected pace, run type classification probabilities, and simulated pace curves over distance.
 - Fatigue Trend Analysis: Visual tracking of the fatigue index (pace delta between the second and first halves of a run) and rolling training loads.
+- Running Power Analysis: Visualization of estimated running power (W/kg) using the Minetti metabolic cost model, including per-run power curves, power distribution by run type, and fleet-wide power vs pace comparison.
+- Performance Alerts & Anomaly Detection: Automated monitoring that compares the last 5 runs against historical baselines, triggering alerts for pace degradation, high fatigue index, training volume spikes, and power drops.
 - Interactive AI Running Coach: A chat assistant powered by Gemini 2.5 Flash, providing training recommendations and contextual analytics based on the active run history.
 
 ## Repository Structure

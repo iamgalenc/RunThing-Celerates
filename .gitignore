@@ -1,0 +1,14 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Local environments & secrets
+.env
+.streamlit/secrets.toml
+
+# Local models and data
+saved_models/
+run_csvs/
+
+# Zipped data downloads
+*.zip
