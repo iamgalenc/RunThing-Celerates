@@ -1196,7 +1196,6 @@ with tabs[6]:
 # TAB 7 — Running Power Analysis
 # ============================================================
 with tabs[7]:
-<<<<<<< HEAD
     st.subheader("⚡ Running Power Analysis")
     st.markdown(
         "Estimasi daya lari (*running power*) dihitung menggunakan "
@@ -1609,8 +1608,6 @@ with tabs[8]:
 # TAB 9 — AI Running Coach
 # ============================================================
 with tabs[9]:
-=======
->>>>>>> 1261f0a5dd19df8f8e9602e35482245f76827467
     st.subheader("💬 Chat with Runthing Coach")
     st.markdown(
         "Ask questions about your pacing, run classifications, fatigue levels, or training recommendations. "
